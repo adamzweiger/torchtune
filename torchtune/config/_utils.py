@@ -23,11 +23,12 @@ def log_config(recipe_name: str, cfg: DictConfig) -> None:
         recipe_name (str): name of the recipe to display
         cfg (DictConfig): parsed config object
     """
-    logger = get_logger("DEBUG")
-    cfg_str = OmegaConf.to_yaml(cfg, resolve=True, sort_keys=True)
-    log_rank_zero(
-        logger=logger, msg=f"Running {recipe_name} with resolved config:\n\n{cfg_str}"
-    )
+    pass
+    # logger = get_logger("DEBUG")
+    # cfg_str = OmegaConf.to_yaml(cfg, resolve=True, sort_keys=True)
+    # log_rank_zero(
+    #     logger=logger, msg=f"Running {recipe_name} with resolved config:\n\n{cfg_str}"
+    # )
 
 
 def _has_component(node: Union[Dict[str, Any], DictConfig]) -> bool:
