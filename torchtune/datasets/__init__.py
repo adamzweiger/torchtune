@@ -22,6 +22,10 @@ from torchtune.datasets._text_completion import (
     text_completion_dataset,
     TextCompletionDataset,
 )
+from torchtune.datasets._masked_text_completion import (
+    masked_text_completion_dataset,
+    MaskedTextCompletionDataset,
+)
 from torchtune.datasets._wikitext import wikitext_dataset
 
 __all__ = [
@@ -36,6 +40,8 @@ __all__ = [
     "chat_dataset",
     "text_completion_dataset",
     "TextCompletionDataset",
+    "masked_text_completion_dataset",
+    "MaskedTextCompletionDataset",
     "cnn_dailymail_articles_dataset",
     "PackedDataset",
     "ConcatDataset",
