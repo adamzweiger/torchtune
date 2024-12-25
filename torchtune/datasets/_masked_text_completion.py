@@ -13,44 +13,36 @@ from typing import Any, Dict, List, Mapping
 class MaskedTextCompletionDataset(TextCompletionDataset):
     """
     A subclass of TextCompletionDataset that masks all tokens before and
-    including the last occurrence of "A:\n" in the raw text. We do not rely on
-    sublist matching for "A:\n" but rather do a prefix-based approach.
+    including the last occurrence of "A:" in the raw text. We do not rely on
+    sublist matching for "A:" but rather do a prefix-based approach.
     """
 
     def _prepare_sample(self, sample: Mapping[str, Any]) -> Dict[str, List[int]]:
-        # Use the parent to get tokens and labels
-        result = super()._prepare_sample(sample)
-        tokens = result["tokens"]
-        labels = result["labels"]  # same as tokens from parent
-
-        # The entire raw text from which tokens were generated
         prompt = sample[self._column]
 
-        # 1) Locate the last occurrence of "A:" in the raw text
-        last_a_pos = prompt.rfind("A:")
-        if last_a_pos == -1:
-            # If no "A:" found, mask everything
-            labels = [CROSS_ENTROPY_IGNORE_IDX] * len(labels)
-        else:
-            # 2) Truncate the text up to that occurrence
-            #    (including the length of "A:")
-            prefix_text = prompt[: last_a_pos + len("A:")]
+        # find last "A:"
+        idx = prompt.rfind("A:")
+        if idx == -1:
+            # fallback: if no "A:" found, mask everything
+            tokens = self._tokenizer.encode(prompt, add_bos=True, add_eos=True)
+            labels = [CROSS_ENTROPY_IGNORE_IDX] * len(tokens)
+            return {"tokens": tokens, "labels": labels}
 
-            # 3) Tokenize just the truncated prefix
-            #    (we assume our parent class has a self._tokenizer)
-            prefix_tokens = self._tokenizer.encode(prefix_text, add_bos=True, add_eos=self.add_eos)
-            
-            # 4) Everything in prefix_tokens is masked, i.e. ignore its loss
-            mask_end = len(prefix_tokens)
-            if mask_end > len(labels):
-                # edge case: if something caused prefix_tokens to be longer than the
-                # final tokens. Typically won't happen, but just to be safe:
-                mask_end = len(labels)
-            for i in range(mask_end):
-                labels[i] = CROSS_ENTROPY_IGNORE_IDX
+        # otherwise, split raw text
+        prefix = prompt[: idx + len("A:")]  # e.g. "Q: Who won?\nA:"
+        answer = prompt[idx + len("A:") :]  # e.g. " The Lakers"
 
-        result["labels"] = labels
-        return result
+        # tokenize separately
+        prefix_ids = self._tokenizer.encode(prefix, add_bos=True, add_eos=False)
+        answer_ids = self._tokenizer.encode(answer, add_bos=False, add_eos=False)
+
+        # create labels
+        prefix_labels = [CROSS_ENTROPY_IGNORE_IDX] * len(prefix_ids)
+        answer_labels = answer_ids[:]  # copy them, we want to predict this portion
+
+        tokens = prefix_ids + answer_ids
+        labels = prefix_labels + answer_labels
+        return {"tokens": tokens, "labels": labels}
 
 
 def masked_text_completion_dataset(
