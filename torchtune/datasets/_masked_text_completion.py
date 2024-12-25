@@ -12,8 +12,9 @@ from typing import Any, Dict, List, Mapping
 
 class MaskedTextCompletionDataset(TextCompletionDataset):
     """
-    A subclass of TextCompletionDataset that masks all tokens before and including the last "A:" marker
-    so that the model only computes loss on the portion after the last "A:".
+    A subclass of TextCompletionDataset that masks all tokens before and
+    including the last occurrence of "A:\n" in the raw text. We do not rely on
+    sublist matching for "A:\n" but rather do a prefix-based approach.
     """
 
     def _prepare_sample(self, sample: Mapping[str, Any]) -> Dict[str, List[int]]:
@@ -22,35 +23,31 @@ class MaskedTextCompletionDataset(TextCompletionDataset):
         tokens = result["tokens"]
         labels = result["labels"]  # same as tokens from parent
 
-        # Original prompt text used to find "A:" substring
+        # The entire raw text from which tokens were generated
         prompt = sample[self._column]
 
-        # Find the last occurrence of "A:"
+        # 1) Locate the last occurrence of "A:" in the raw text
         last_a_pos = prompt.rfind("A:")
         if last_a_pos == -1:
             # If no "A:" found, mask everything
             labels = [CROSS_ENTROPY_IGNORE_IDX] * len(labels)
         else:
-            # Tokenize "A:" separately to find its position in tokens
-            a_tokens = self._tokenizer.encode("A:", add_bos=False, add_eos=False)
+            # 2) Truncate the text up to that occurrence
+            #    (including the length of "A:")
+            prefix_text = prompt[: last_a_pos + len("A:")]
 
-            # Find the last occurrence of a_tokens in tokens
-            def find_last_sublist(main_list, sub_list):
-                last_found = -1
-                for i in range(len(main_list)-len(sub_list)+1):
-                    if main_list[i:i+len(sub_list)] == sub_list:
-                        last_found = i
-                return last_found
-
-            start_idx = find_last_sublist(tokens, a_tokens)
-            if start_idx == -1:
-                # Can't find "A:" in tokens; fallback - mask all
-                labels = [CROSS_ENTROPY_IGNORE_IDX] * len(labels)
-            else:
-                # Mask everything up to and including the "A:" tokens
-                mask_end = start_idx + len(a_tokens)
-                for i in range(mask_end):
-                    labels[i] = CROSS_ENTROPY_IGNORE_IDX
+            # 3) Tokenize just the truncated prefix
+            #    (we assume our parent class has a self._tokenizer)
+            prefix_tokens = self._tokenizer.encode(prefix_text, add_bos=True, add_eos=self.add_eos)
+            
+            # 4) Everything in prefix_tokens is masked, i.e. ignore its loss
+            mask_end = len(prefix_tokens)
+            if mask_end > len(labels):
+                # edge case: if something caused prefix_tokens to be longer than the
+                # final tokens. Typically won't happen, but just to be safe:
+                mask_end = len(labels)
+            for i in range(mask_end):
+                labels[i] = CROSS_ENTROPY_IGNORE_IDX
 
         result["labels"] = labels
         return result
