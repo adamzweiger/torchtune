@@ -45,7 +45,7 @@ class MaskedTextCompletionCoTDataset(TextCompletionDataset):
         return {"tokens": tokens, "labels": labels}
 
 
-def masked_text_completion_cot__dataset(
+def masked_text_completion_cot_dataset(
     tokenizer,
     source: str,
     column: str = "text",
