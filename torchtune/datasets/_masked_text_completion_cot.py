@@ -32,6 +32,9 @@ class MaskedTextCompletionCoTDataset(TextCompletionDataset):
         prefix = prompt[: idx + len("R:")]  # e.g. "Q: Who won?\nR:"
         answer = prompt[idx + len("R:") :]  # e.g. " The Lakers"
 
+        print(f"prefix: {prefix}")
+        print(f"answer: {answer}")
+        print('-' * 50)
         # tokenize separately
         prefix_ids = self._tokenizer.encode(prefix, add_bos=True, add_eos=False)
         answer_ids = self._tokenizer.encode(answer, add_bos=False, add_eos=True)
