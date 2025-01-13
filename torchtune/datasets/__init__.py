@@ -30,6 +30,14 @@ from torchtune.datasets._masked_text_completion_cot import (
     masked_text_completion_cot_dataset,
     MaskedTextCompletionCoTDataset,
 )
+from torchtune.datasets._masked_inputs_text_completion import (
+    masked_inputs_text_completion_dataset,
+    MaskedInputsTextCompletionDataset,
+)
+from torchtune.datasets._masked_inputs_text_completion_cot import (
+    masked_inputs_text_completion_cot_dataset,
+    MaskedInputsTextCompletionCoTDataset,
+)
 from torchtune.datasets._wikitext import wikitext_dataset
 
 __all__ = [
@@ -48,6 +56,10 @@ __all__ = [
     "MaskedTextCompletionDataset",
     "masked_text_completion_cot_dataset",
     "MaskedTextCompletionCoTDataset",
+    "masked_inputs_text_completion_dataset",
+    "MaskedInputsTextCompletionDataset",
+    "masked_inputs_text_completion_cot_dataset",
+    "MaskedInputsTextCompletionCoTDataset",
     "cnn_dailymail_articles_dataset",
     "PackedDataset",
     "ConcatDataset",
